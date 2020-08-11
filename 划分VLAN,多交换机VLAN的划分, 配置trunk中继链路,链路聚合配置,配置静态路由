@@ -1,0 +1,186 @@
+NETWORK 案例
+02 -------------------------------VLAN技术及应用  TRUNK  网络层解析
+
+NSD NETWORK DAY02
+
+    案例1：划分VLAN
+    案例2：多交换机VLAN的划分
+    案例3：配置trunk中继链路
+    案例4：链路聚合配置
+    案例5：配置静态路由
+    案例6：三层交换机基本配置
+
+1 案例1：划分VLAN
+1.1 问题
+
+在交换机上创建以下VLAN，按照拓扑图-1将端口加入到指定的VLAN并配置服务器IP地址，实现同VLAN主机的通信
+
+ 
+
+图-1
+1.2 步骤
+
+实现此案例需要按照如下步骤进行
+
+步骤一：创建vlan，并将接口加入
+
+由于默认情况下所有接口都在VLAN1中，且VLAN1默认就存在，所以只需要配置VLAN2和VLAN3即可
+
+    <Huawei>system-view 
+    [Huawei]vlan batch 2 3            //创建VLAN2、3
+    [Huawei]port-group 1
+    [Huawei-port-group-1]group-member Ethernet0/0/3 Ethernet0/0/4
+    [Huawei-port-group-1]port link-type access 
+    [Huawei-port-group-1]port default vlan 2                        
+    [Huawei-port-group-1]quit
+    [Huawei]port-group 2
+    [Huawei-port-group-2]group-member Ethernet0/0/5 Ethernet0/0/6
+    [Huawei-port-group-2]port link-type access 
+    [Huawei-port-group-2]port default vlan 3    
+
+2 案例2：多交换机VLAN的划分
+2.1 问题
+通过配置交换机实现图-2中的同VLAN主机互通
+ 
+
+图-2
+2.2 步骤
+
+注：以下配置需要在案例1的基础上完成
+
+步骤一：创建vlan，并将接口加入
+
+1）S1配置
+
+    [Huawei]interface Ethernet0/0/7
+    [Huawei-Ethernet0/0/7] port link-type access
+    [Huawei-Ethernet0/0/7] port default vlan 3
+
+2）S2配置
+
+    <Huawei>system-view 
+    [Huawei]vlan 3            //创建VLAN3
+    [Huawei]port-group 1
+    [Huawei-port-group-1]group-member Ethernet0/0/5 to Ethernet0/0/7
+    [Huawei-port-group-1]port link-type access 
+    [Huawei-port-group-1]port default vlan 3    
+
+3 案例3：配置trunk中继链路
+3.1 问题
+
+通过配置实现跨交换机的同VLAN通信，如图-3所示
+ 
+
+图-3
+3.2 步骤
+
+注：以下配置需要在案例2的基础上完成
+
+步骤一：配置trunk，放行所有vlan
+
+1）S1配置
+
+    如果接口被改动过，则需要恢复默认配置
+    [Huawei] clear configuration interface Ethernet0/0/7
+    [Huawei]interface Ethernet0/0/7
+    [Huawei-Ethernet0/0/7]port default vlan 1
+    [Huawei-Ethernet0/0/7]port link-type trunk
+    [Huawei-Ethernet0/0/1]port trunk allow-pass vlan all
+
+2）S2配置
+
+    <Huawei>system-view 
+    [Huawei]vlan 2         //创建VLAN2
+    [Huawei]port-group 1
+    [Huawei-port-group-1]group-member Ethernet0/0/3 Ethernet0/0/4
+    [Huawei-port-group-1]port link-type access 
+    [Huawei-port-group-1]port default vlan 2                        
+    [Huawei]interface Ethernet0/0/7
+    [Huawei-Ethernet0/0/7]port default vlan 1
+    [Huawei-Ethernet0/0/7]port link-type trunk
+    [Huawei-Ethernet0/0/1]port trunk allow-pass vlan all
+
+4 案例4：链路聚合配置
+4.1 问题
+
+参照图-4将两台交换机的f0/1-f0/2接口互联，并实现高可用
+ 
+
+图-4
+4.2 步骤
+
+步骤一：创建链路聚合接口，并捆绑物理接口
+
+1）S1配置
+
+    [Huawei]interface Eth-trunk 1
+    [Huawei- Eth-trunk1]trunkport ethernet 0/0/1  0/0/2
+    如果接口被改动过，则需要恢复默认配置
+    [Huawei] clear configuration interface Ethernet0/0/1
+
+2）S2配置
+
+    [Huawei]interface Eth-trunk 1
+    [Huawei- Eth-trunk1]trunkport ethernet 0/0/1  0/0/2
+
+5 案例5：配置静态路由
+5.1 问题
+
+按照图-5拓扑结构配置接口ip地址并通过静态路由实现全网互通
+ 
+
+图-5
+5.2 步骤
+
+步骤一：配置ip地址，添加静态路由
+
+1）R1配置
+
+    <Huawei>system-view 
+    [Huawei]interface GigabitEthernet 0/0/0
+    [Huawei-GigabitEthernet0/0/1]ip address 192.168.1.254 24
+    [Huawei-GigabitEthernet0/0/1]quit
+    [Huawei]interface GigabitEthernet 0/0/1
+    [Huawei-GigabitEthernet0/0/1]ip address 192.168.2.1 24
+    [Huawei]ip route-static 192.168.3.0 24 192.168.2.2
+    [Huawei]ip route-static 192.168.4.0 24 192.168.2.2
+
+2）R2配置
+
+    <Huawei>system-view 
+    [Huawei]interface GigabitEthernet 0/0/0
+    [Huawei-GigabitEthernet0/0/1]ip address 192.168.3.254 24
+    [Huawei-GigabitEthernet0/0/1]quit
+    [Huawei]interface GigabitEthernet 0/0/1
+    [Huawei-GigabitEthernet0/0/1]ip address 192.168.2.2 24
+    [Huawei-GigabitEthernet0/0/1]quit
+    [Huawei]interface GigabitEthernet 0/0/2
+    [Huawei-GigabitEthernet0/0/1]ip address 192.168.4.254 24
+    [Huawei]ip route-static 192.168.1.0 24 192.168.2.1
+
+6 案例6：三层交换机基本配置
+6.1 问题
+
+按照图-6的拓扑结构配置ip地址并通过三层交换实现VLAN间通信
+ 
+
+图-6
+6.2 步骤
+
+步骤一：创建vlan，并配置虚拟接口的ip
+
+三层交换机配置
+
+    [Huawei]vlan batch 2 3
+    [Huawei]interface Vlanif 1
+    [Huawei-Vlanif1]ip address 192.168.1.254 24
+    [Huawei]interface Vlanif 2
+    [Huawei-Vlanif1]ip address 192.168.2.254 24
+    [Huawei]interface Vlanif 3
+    [Huawei-Vlanif1]ip address 192.168.3.254 24
+    [Huawei]interface G0/0/2
+    [Huawei-GigabitEthernet0/0/2] port link-type access
+    [Huawei-GigabitEthernet0/0/2] port default vlan 2
+    [Huawei]interface G0/0/3
+    [Huawei-GigabitEthernet0/0/2] port link-type access
+    [Huawei-GigabitEthernet0/0/2] port default vlan 3
